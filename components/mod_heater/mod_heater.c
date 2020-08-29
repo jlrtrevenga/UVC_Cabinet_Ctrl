@@ -261,6 +261,22 @@ void heater_events_test_loop(void *pvParameter)
 }
 
 
+
+/*
+//this function is only available when CONFIG_ESP_EVENT_POST_FROM_ISR is enabled
+//when this function is called from an interrupt handler placed in IRAM, this function 
+//should be placed in IRAM as well by enabling CONFIG_ESP_EVENT_POST_FROM_IRAM_ISR
+
+esp_err_tesp_event_isr_post_to( esp_event_loop_handle_tevent_loop, 
+                                esp_event_base_tevent_base, 
+                                int32_t event_id, 
+                                void *event_data, 
+                                size_t event_data_size, 
+                                BaseType_t *task_unblocked)
+*/
+
+
+
 /*
     ** EVENTS HADLING **********************************************************************
     1.- REGISTER THE HANDLER for each event, or group event ---------------------------------

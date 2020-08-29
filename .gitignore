@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 components/wifi01/wifi_key.h
+z_project_doc/*

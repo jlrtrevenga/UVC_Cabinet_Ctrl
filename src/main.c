@@ -27,7 +27,8 @@
 #include "mod_heater.h"
 #include "mod_mqtt.h"
 #include "mqtt_client.h"
-#include "mod_gpio.h"
+//#include "mod_gpio.h"
+#include "mod_gpio2.h"
 
 #define DELAY_1s             (pdMS_TO_TICKS( 1000))
 #define DELAY_2s             (pdMS_TO_TICKS( 2000))
@@ -187,8 +188,11 @@ typedef enum {
 	
     ESP_LOGI(TAG, "ESP_ID: %s-------------------" ,boardID);    
 
-    int result = gpio_task_create();
-    ESP_LOGI(TAG, "gpio_task_create error: %d ", result); 
+    //int result = gpio_task_create();
+    //ESP_LOGI(TAG, "gpio_task_create error: %d ", result); 
+    
+    gpio2_init(event_loop_h);
+
 
 
     for(;;) {

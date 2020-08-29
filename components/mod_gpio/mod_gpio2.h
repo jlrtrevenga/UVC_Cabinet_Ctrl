@@ -9,12 +9,39 @@
 #define MOD_GPIO_H_
 
 #include <esp_log.h>
+#include "esp_event.h"
+//#include "esp_event_loop.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+// Declarations for the event source
+#define TASK_ITERATIONS_COUNT        10      // number of times the task iterates
+#define TASK_PERIOD                2000      // period of the task loop in milliseconds
 
+ESP_EVENT_DECLARE_BASE(GPIO_EVENTS);         // declaration of the task events family
+
+// Actions are based on objects and objects data. Events only inform to check data and act based on that.
+// Events register may be made based only on BASE, without event_id. No object data is required as it will be read directly form objects.
+enum {
+   BTN_REMOTE_PRESSED,
+   BTN_CMP_SEL_PRESSED,
+   BTN_IRRADIATE_PRESSED
+   } gpio_events;
+
+typedef struct {
+    const char            * task_name;              // name of the event loop task; if NULL,
+    UBaseType_t             task_priority;          // priority of the event loop task, ignored if task name is NULL 
+    uint32_t                task_stack_size;        // stack size of the event loop task, ignored if task name is NULL
+    BaseType_t              task_core_id;           // core to which the event loop task is pinned to,    
+	 uint32_t 	             ulLoopPeriod; 		    // loop period in ms.
+	 esp_event_loop_handle_t  event_loop_handle; 	 // event loop handler where events will be registered by heater_ctrl_loop
+	} gpioConfig_t;
+
+
+
+//GPIO OUTPUTS
 #define GO_FBK_POWER_ON       18
 #define GO_FBK_LOCAL          13
 #define GO_FBK_REMOTE         19
@@ -34,6 +61,7 @@ extern "C" {
                                (1ULL<<GO_CMD_CMP01_IRRAD_ON) | \
                                (1ULL<<GO_CMD_CMP02_IRRAD_ON)) 
 
+//GPIO INPUTS
 #define GI_CMD_REMOTE          39
 #define GI_CMD_CMP_SEL         34
 #define GI_CMD_IRRADIATE       35
@@ -48,23 +76,8 @@ extern "C" {
 #define FS_OFF 1
 
 
-
-
-/****************************************************************************** 
-* gpio_task_create
-*******************************************************************************
- * @brief gpio_task_create: Creates gpio_task (listener) and gpio_isr_handler to process GPIO input events
-*******************************************************************************/
-int gpio_task_create(void);
-
-
-/****************************************************************************** 
-* gpio_task_destroy
-*******************************************************************************
-* @brief gpio_task_destroy: Destroys gpio task listener
-*******************************************************************************/
-void gpio_task_destroy(void);
-
+void gpio2_init(esp_event_loop_handle_t  event_loop_handle_par);
+void gpio_deinit(void);
 
 
 #ifdef __cplusplus
