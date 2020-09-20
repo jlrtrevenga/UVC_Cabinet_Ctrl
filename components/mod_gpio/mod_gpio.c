@@ -181,6 +181,67 @@ void gpio_init(void) {
 }
 
 
+/****************************************************************************** 
+* GPIO INIT
+*******************************************************************************
+* @brief INTIALIZES outputs
+*******************************************************************************/
+void gpio_test(void) {
+    state_LR = 0;                                // 0-LOCAL / 1-REMOTE
+    state_CMP_SEL = 0;                           // 0-None / 1-Lower / 2-Higher / 3-both
+    state_RADIATE = 0;                           // 0-OFF / 1-ON
+
+    gpio_set_level(GO_FBK_POWER_ON, OFF);
+    gpio_set_level(GO_FBK_LOCAL, OFF);
+    gpio_set_level(GO_FBK_REMOTE, OFF);
+    gpio_set_level(GO_FBK_CMP01_SEL, OFF);
+    gpio_set_level(GO_FBK_CMP02_SEL, OFF);
+    gpio_set_level(GO_FBK_IRRAD_ON, OFF);
+    gpio_set_level(GO_FBK_IRRAD_OFF, ON);
+    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
+    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF); 
+
+
+    gpio_set_level(GO_FBK_POWER_ON, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
+    gpio_set_level(GO_FBK_POWER_ON, OFF);
+
+    gpio_set_level(GO_FBK_LOCAL, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
+    gpio_set_level(GO_FBK_LOCAL, OFF);
+
+    gpio_set_level(GO_FBK_REMOTE, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
+    gpio_set_level(GO_FBK_REMOTE, OFF);
+
+    gpio_set_level(GO_FBK_CMP01_SEL, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
+    gpio_set_level(GO_FBK_CMP01_SEL, OFF);
+
+    gpio_set_level(GO_FBK_CMP02_SEL, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
+    gpio_set_level(GO_FBK_CMP02_SEL, OFF);
+
+    gpio_set_level(GO_FBK_IRRAD_ON, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
+    gpio_set_level(GO_FBK_IRRAD_ON, OFF);
+
+    gpio_set_level(GO_FBK_IRRAD_OFF, ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time    
+    gpio_set_level(GO_FBK_IRRAD_OFF, OFF);
+
+    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_ON);
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time    
+    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
+
+    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_ON); 
+    vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time    
+    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF); 
+}
+
+
+
+
 
 
 /****************************************************************************** 

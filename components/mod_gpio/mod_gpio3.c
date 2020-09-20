@@ -18,9 +18,13 @@
 #include <esp_event.h>
 #include "driver/gpio.h"
 
-#include "mod_gpio2.h"
+#include "mod_gpio3.h"
 
-// TODO - Esto pasa a librería de proceso
+// NOTAS: 
+// Modificación para que solo tenga boton de IRRADIAR, para aprovechar las placas que salieron mal
+// Esto es solo una aplicacion temporal.
+
+
 static xQueueHandle gpio_evt_queue = NULL;      //queue to send input "events"
 TaskHandle_t  TaskHandle_mod_gpio;              // GPIO task handle
 TaskHandle_t* pxTaskHandle_mod_gpio;            // GPIO task handle
@@ -49,11 +53,9 @@ static TickType_t button_Radiate_PreviousTick = 0;
 #define DELAY_TIME_1s          (1.0)       // Interval in seconds
 
 
-void button_REMOTE(void);
-void button_CMP_SEL(void);
 void button_RADIATE(TickType_t TickTimePressed);
 void gpio_test();
-// TODO - Esto pasa a librería de proceso
+
 
 static const char* TAG = "MOD_GPIO2";
 ESP_EVENT_DEFINE_BASE(GPIO_EVENTS);               // Event source task related definitions
@@ -75,22 +77,6 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
     //xQueueSendFromISR(gpio_evt_queue, &gpio_num, NULL);
 
     switch (gpio_num) {
-        case GI_CMD_REMOTE:
-            // debounce: Filter button signals during BUTTON_DEBOUNCE_MILLIS ms.
-            button_Remote_ActualTick = xTaskGetTickCount();            
-            if ((button_Remote_ActualTick - button_Remote_PreviousTick) >= (BUTTON_DEBOUNCE_MILLIS/portTICK_PERIOD_MS) ) {
-                    button_Remote_PreviousTick = button_Remote_ActualTick;
-                    esp_event_isr_post_to(event_loop_handle, GPIO_EVENTS, BTN_REMOTE_PRESSED, NULL, 0, NULL);                    }
-            break;
-
-        case GI_CMD_CMP_SEL:
-            // debounce: Filter button signals during BUTTON_DEBOUNCE_MILLIS ms.
-            button_Cmp_sel_ActualTick = xTaskGetTickCount();            
-            if ((button_Cmp_sel_ActualTick - button_Cmp_sel_PreviousTick) >= (BUTTON_DEBOUNCE_MILLIS/portTICK_PERIOD_MS) ) {
-                    button_Cmp_sel_PreviousTick = button_Cmp_sel_ActualTick;
-                    esp_event_isr_post_to(event_loop_handle, GPIO_EVENTS, BTN_CMP_SEL_PRESSED, NULL, 0, NULL);
-                    }
-            break;
 
         case GI_CMD_IRRADIATE:
             // debounce: Filter button signals during BUTTON_DEBOUNCE_MILLIS ms.
@@ -111,7 +97,7 @@ static void IRAM_ATTR gpio_isr_handler(void* arg) {
 * @brief INTIALIZES outputs
 * @param[in] esp_event_loop_handle_t: event_loop_handle where events are sent. 
 *******************************************************************************/
-void gpio2_init(esp_event_loop_handle_t  event_loop_handle_par) {
+void gpio3_init(esp_event_loop_handle_t  event_loop_handle_par) {
     
     //TODO - Pasa a la función de proceso
     state_LR = 0;                                // 0-LOCAL / 1-REMOTE
@@ -137,25 +123,22 @@ void gpio2_init(esp_event_loop_handle_t  event_loop_handle_par) {
 
     //initialize signal values
     gpio_set_level(GO_FBK_POWER_ON, ON);
-    gpio_set_level(GO_FBK_LOCAL, ON);
-    gpio_set_level(GO_FBK_REMOTE, OFF);
-    gpio_set_level(GO_FBK_CMP01_SEL, OFF);
-    gpio_set_level(GO_FBK_CMP02_SEL, OFF);
     gpio_set_level(GO_FBK_IRRAD_ON, OFF);
     gpio_set_level(GO_FBK_IRRAD_OFF, ON);
     gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF); 
+    
+     state_CMP_SEL = 1;     // 0-None / 1-Lower / 2-Higher / 3-both
 
     // Initilize event_loop_handle before it is used
     event_loop_handle = event_loop_handle_par;
 
     //register isr service and handler for each signal
     gpio_install_isr_service(ESP_INTR_FLAG_DEFAULT);                                    //install gpio isr service
-    gpio_isr_handler_add(GI_CMD_REMOTE,    gpio_isr_handler, (void*) GI_CMD_REMOTE);       //hook isr handler for specific gpio pin
-    gpio_isr_handler_add(GI_CMD_CMP_SEL,   gpio_isr_handler, (void*) GI_CMD_CMP_SEL);       //hook isr handler for specific gpio pin
+    //gpio_isr_handler_add(GI_CMD_REMOTE,    gpio_isr_handler, (void*) GI_CMD_REMOTE);       //hook isr handler for specific gpio pin
+    //gpio_isr_handler_add(GI_CMD_CMP_SEL,   gpio_isr_handler, (void*) GI_CMD_CMP_SEL);       //hook isr handler for specific gpio pin
     gpio_isr_handler_add(GI_CMD_IRRADIATE, gpio_isr_handler, (void*) GI_CMD_IRRADIATE);       //hook isr handler for specific gpio pin
 
-    gpio_test();
+    //gpio_test();
 
     // Register events
     ESP_ERROR_CHECK(esp_event_handler_register_with(event_loop_handle, GPIO_EVENTS, ESP_EVENT_ANY_ID, gpio_event_handler, NULL));
@@ -170,39 +153,16 @@ void gpio2_init(esp_event_loop_handle_t  event_loop_handle_par) {
 *******************************************************************************/
 void gpio_test(void) {
     state_LR = 0;                                // 0-LOCAL / 1-REMOTE
-    state_CMP_SEL = 0;                           // 0-None / 1-Lower / 2-Higher / 3-both
+    //state_CMP_SEL = 0;                           // 0-None / 1-Lower / 2-Higher / 3-both
     state_RADIATE = 0;                           // 0-OFF / 1-ON
 
     gpio_set_level(GO_FBK_POWER_ON, OFF);
-    gpio_set_level(GO_FBK_LOCAL, OFF);
-    gpio_set_level(GO_FBK_REMOTE, OFF);
-    gpio_set_level(GO_FBK_CMP01_SEL, OFF);
-    gpio_set_level(GO_FBK_CMP02_SEL, OFF);
     gpio_set_level(GO_FBK_IRRAD_ON, OFF);
-    gpio_set_level(GO_FBK_IRRAD_OFF, ON);
-    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF); 
-
+    gpio_set_level(GO_FBK_IRRAD_OFF, OFF);
 
     gpio_set_level(GO_FBK_POWER_ON, ON);
     vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time
     gpio_set_level(GO_FBK_POWER_ON, OFF);
-
-    gpio_set_level(GO_FBK_LOCAL, ON);
-    vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time
-    gpio_set_level(GO_FBK_LOCAL, OFF);
-
-    gpio_set_level(GO_FBK_REMOTE, ON);
-    vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time
-    gpio_set_level(GO_FBK_REMOTE, OFF);
-
-    gpio_set_level(GO_FBK_CMP01_SEL, ON);
-    vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time
-    gpio_set_level(GO_FBK_CMP01_SEL, OFF);
-
-    gpio_set_level(GO_FBK_CMP02_SEL, ON);
-    vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time
-    gpio_set_level(GO_FBK_CMP02_SEL, OFF);
 
     gpio_set_level(GO_FBK_IRRAD_ON, ON);
     vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time
@@ -212,16 +172,7 @@ void gpio_test(void) {
     vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time    
     gpio_set_level(GO_FBK_IRRAD_OFF, OFF);
 
-    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_ON);
-    vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time    
-    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-
-    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_ON); 
-    vTaskDelay(pdMS_TO_TICKS(DELAY_TIME_1s * 1000));          // Start Delay Time    
-    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF); 
-
     gpio_set_level(GO_FBK_POWER_ON, ON);
-    gpio_set_level(GO_FBK_LOCAL, ON);
 }
 
 
@@ -236,14 +187,6 @@ void gpio_event_handler(void* handler_args, esp_event_base_t base, int32_t id, v
     ESP_LOGI(TAG, "EVENT_HANDLER: Event received: %s:%d", base, id);
 
     switch (id) {
-        case BTN_REMOTE_PRESSED:
-            button_REMOTE();                 
-            break;
-
-        case BTN_CMP_SEL_PRESSED:
-            button_CMP_SEL();
-            break;
-
         case BTN_IRRADIATE_PRESSED:
             button_RADIATE(button_Radiate_ActualTick);                  
             break;
@@ -260,72 +203,9 @@ void gpio_event_handler(void* handler_args, esp_event_base_t base, int32_t id, v
 * gpio_deinit
 *******************************************************************************/
 void gpio_deinit(void) {
-    gpio_isr_handler_remove(GI_CMD_REMOTE); 
-    gpio_isr_handler_remove(GI_CMD_CMP_SEL);
     gpio_isr_handler_remove(GI_CMD_IRRADIATE);          
 }
 
-
-/****************************************************************************** 
-* Button LOCAL/REMOTE
-*******************************************************************************
-* @brief Change LOCAL -> REMOTE and REMOTE -> LOCAL
-*******************************************************************************/
-void button_REMOTE(void) {
-    ESP_LOGI(TAG, "Button_REMOTE Processed"); 
-
-    if (state_LR == 0) {state_LR = 1;}                          // Change from LOCAL  -> REMOTE
-    else { state_LR = 0;}                                       // Change from REMOTE -> LOCAL
-
-    ESP_LOGI(TAG, "state_LR = %d", state_LR); 
-
-    if (state_LR == 0){
-        gpio_set_level(GO_FBK_LOCAL, ON);
-        gpio_set_level(GO_FBK_REMOTE, OFF);            
-    }
-    else {
-        gpio_set_level(GO_FBK_LOCAL, OFF);
-        gpio_set_level(GO_FBK_REMOTE, ON);            
-    }
-}
-
-
-/****************************************************************************** 
-* Button CMP_SEL
-*******************************************************************************
-* @brief Change COMPARTIMENT SELECTION
-*******************************************************************************/
-void button_CMP_SEL(void) {
-    ESP_LOGI(TAG, "Button COMPARTMENT_SELECTION Processed");     
-    if (state_LR == 0 ){     // This button can only be operated when in LOCAL mode
-
-        if (state_CMP_SEL == 3) {state_CMP_SEL = 0;}                 // ReStart count
-        else { state_CMP_SEL++;}                                     // Increment count
-
-        // 0-None / 1-Lower / 2-Higher / 3-both
-        switch (state_CMP_SEL) {
-            case 0:
-                gpio_set_level(GO_FBK_CMP01_SEL, OFF);
-                gpio_set_level(GO_FBK_CMP02_SEL, OFF);     
-                break;     
-
-            case 1:
-                gpio_set_level(GO_FBK_CMP01_SEL, ON);
-                gpio_set_level(GO_FBK_CMP02_SEL, OFF);
-                break;
-
-            case 2:
-                gpio_set_level(GO_FBK_CMP01_SEL, OFF);
-                gpio_set_level(GO_FBK_CMP02_SEL, ON);
-                break;
-                
-            case 3:
-                gpio_set_level(GO_FBK_CMP01_SEL, ON);
-                gpio_set_level(GO_FBK_CMP02_SEL, ON);
-                break;
-            }
-        }
-}
 
 
 /****************************************************************************** 
@@ -345,71 +225,31 @@ void button_RADIATE(TickType_t TickTimePressed) {
             if (state_RADIATE == 0) {      // and no RADIATION PROCESS in process ...        
                 state_RADIATE = 1;
                 ESP_LOGI(TAG, "state_RADIATE = %d", state_RADIATE); 
-                ESP_LOGI(TAG, "GO_FBK_CMP01_SEL = %d", GO_FBK_CMP01_SEL); 
-                ESP_LOGI(TAG, "GO_FBK_CMP02_SEL = %d", GO_FBK_CMP02_SEL); 
 
                 if (state_RADIATE == 1) {                // 0-None / 1-Lower / 2-Higher / 3-both
                     switch (state_CMP_SEL) {
-                        case 0:
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF);            
-                            gpio_set_level(GO_FBK_IRRAD_ON, OFF);
-                            gpio_set_level(GO_FBK_IRRAD_OFF, ON);
-                            break;     
-
                         case 1:
                             vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_ON);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF);            
+
+                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_ON);        
                             gpio_set_level(GO_FBK_IRRAD_ON, ON);
                             gpio_set_level(GO_FBK_IRRAD_OFF, OFF);
-
                             vTaskDelay(pdMS_TO_TICKS(RADIATION_TIME_CPM01 * 1000));          // Irradiation Time
+
                             gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF);            
                             gpio_set_level(GO_FBK_IRRAD_ON, OFF);
                             gpio_set_level(GO_FBK_IRRAD_OFF, ON);                    
-                            break;
-
-                        case 2:
-                            vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_ON);            
-                            gpio_set_level(GO_FBK_IRRAD_ON, ON);
-                            gpio_set_level(GO_FBK_IRRAD_OFF, OFF); 
-                            
-                            vTaskDelay(pdMS_TO_TICKS(RADIATION_TIME_CPM02 * 1000));          // Irradiation Time
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF);            
-                            gpio_set_level(GO_FBK_IRRAD_ON, OFF);
-                            gpio_set_level(GO_FBK_IRRAD_OFF, ON);                    
-                            break;
-                            
-                        case 3:
-                            vTaskDelay(pdMS_TO_TICKS(START_DELAY_TIME * 1000));          // Start Delay Time
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_ON);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_ON);            
-                            gpio_set_level(GO_FBK_IRRAD_ON, ON);
-                            gpio_set_level(GO_FBK_IRRAD_OFF, OFF);
-
-                            vTaskDelay(pdMS_TO_TICKS(RADIATION_TIME_CPM01 * 1000));          // Irradiation Time
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF);            
-                            gpio_set_level(GO_FBK_IRRAD_ON, OFF);
-                            gpio_set_level(GO_FBK_IRRAD_OFF, ON);                                        
                             break;
 
                         default:
-                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, OFF);
-                            gpio_set_level(GO_CMD_CMP02_IRRAD_ON, OFF);            
+                            gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
                             gpio_set_level(GO_FBK_IRRAD_ON, OFF);
                             gpio_set_level(GO_FBK_IRRAD_OFF, ON);
                             break;
                         }
                 }   
                 else {
-                    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);
-                    gpio_set_level(GO_CMD_CMP02_IRRAD_ON, FS_OFF);            
+                    gpio_set_level(GO_CMD_CMP01_IRRAD_ON, FS_OFF);       
                     gpio_set_level(GO_FBK_IRRAD_ON, OFF);
                     gpio_set_level(GO_FBK_IRRAD_OFF, ON);        
                 }
@@ -418,14 +258,6 @@ void button_RADIATE(TickType_t TickTimePressed) {
         }
     }
 }
-
-
-
-// Relays Control: 
-//    gpio_set_level(GPIO_OUTPUT_02, ON);
-//    gpio_isr_handler_remove(GPIO_INPUT_01);                                               //remove isr handler for gpio number.
-//    gpio_isr_handler_add(GPIO_INPUT_01, gpio_isr_handler, (void*) GPIO_INPUT_01);       //hook isr handler for specific gpio pin again 
-
 
 
 

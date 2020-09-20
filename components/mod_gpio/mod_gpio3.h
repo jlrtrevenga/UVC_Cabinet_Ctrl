@@ -52,19 +52,6 @@ typedef struct {
 #define GO_FBK_IRRAD_OFF      25
 #define GO_CMD_CMP01_IRRAD_ON 17
 #define GO_CMD_CMP02_IRRAD_ON 16
-*************************************/
-
-#define GO_FBK_POWER_ON       18
-#define GO_FBK_LOCAL          33 
-#define GO_FBK_REMOTE         19
-#define GO_FBK_CMP01_SEL      25
-#define GO_FBK_CMP02_SEL      14    //39
-#define GO_FBK_IRRAD_ON       15    //35
-#define GO_FBK_IRRAD_OFF       4    //34
-#define GO_CMD_CMP01_IRRAD_ON 17
-#define GO_CMD_CMP02_IRRAD_ON 16
-
-
 
 #define GPIO_OUTPUT_PIN_SEL   ((1ULL<<GO_FBK_POWER_ON)       | \
                                (1ULL<<GO_FBK_LOCAL)          | \
@@ -75,20 +62,51 @@ typedef struct {
                                (1ULL<<GO_FBK_IRRAD_OFF)      | \
                                (1ULL<<GO_CMD_CMP01_IRRAD_ON) | \
                                (1ULL<<GO_CMD_CMP02_IRRAD_ON)) 
+*************************************/
+
+/*
+#define GO_FBK_POWER_ON       18
+#define GO_FBK_LOCAL          33 
+#define GO_FBK_REMOTE         19
+#define GO_FBK_CMP01_SEL      25
+#define GO_FBK_CMP02_SEL      14    //39
+#define GO_FBK_IRRAD_ON       15    //35
+#define GO_FBK_IRRAD_OFF       4    //34
+#define GO_CMD_CMP01_IRRAD_ON 17
+#define GO_CMD_CMP02_IRRAD_ON 16
+*/
+
+#define GO_FBK_POWER_ON       18
+#define GO_FBK_IRRAD_ON       33 
+#define GO_FBK_IRRAD_OFF      19
+#define GO_CMD_CMP01_IRRAD_ON 17
+
+
+#define GPIO_OUTPUT_PIN_SEL   ((1ULL<<GO_FBK_POWER_ON)       | \
+                               (1ULL<<GO_FBK_IRRAD_ON)       | \
+                               (1ULL<<GO_FBK_IRRAD_OFF)      | \
+                               (1ULL<<GO_CMD_CMP01_IRRAD_ON))                                
 
 //GPIO INPUTS
 /************************************
 #define GI_CMD_REMOTE          39
 #define GI_CMD_CMP_SEL         34
 #define GI_CMD_IRRADIATE       35
-************************************/
 
-#define GI_CMD_REMOTE          27
-#define GI_CMD_CMP_SEL         13
-#define GI_CMD_IRRADIATE       26
 #define GPIO_INPUT_PIN_SEL    ((1ULL<<GI_CMD_REMOTE)       | \
                                (1ULL<<GI_CMD_CMP_SEL)      | \
                                (1ULL<<GI_CMD_IRRADIATE))
+************************************/
+
+/*
+#define GI_CMD_REMOTE          27
+#define GI_CMD_CMP_SEL         13
+#define GI_CMD_IRRADIATE       26
+*/
+
+#define GI_CMD_IRRADIATE       27
+
+#define GPIO_INPUT_PIN_SEL    (1ULL<<GI_CMD_IRRADIATE)
 
 #define ESP_INTR_FLAG_DEFAULT 0
 #define ON  1
@@ -97,7 +115,7 @@ typedef struct {
 #define FS_OFF 1
 
 
-void gpio2_init(esp_event_loop_handle_t  event_loop_handle_par);
+void gpio3_init(esp_event_loop_handle_t  event_loop_handle_par);
 void gpio_deinit(void);
 
 

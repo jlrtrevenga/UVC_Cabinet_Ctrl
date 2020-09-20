@@ -28,7 +28,7 @@
 #include "mod_mqtt.h"
 #include "mqtt_client.h"
 //#include "mod_gpio.h"
-#include "mod_gpio2.h"
+#include "mod_gpio3.h"
 
 #define DELAY_1s             (pdMS_TO_TICKS( 1000))
 #define DELAY_2s             (pdMS_TO_TICKS( 2000))
@@ -117,12 +117,6 @@ typedef enum {
     setenv("TZ", "UTC-2,M3.5.0/2,M10.4.0/2", 1);
     tzset();
 
-    // TODO: esto es prueba rapida, codificar bien mas adelante, sacar como var globales junto con todas las DOs
-    static DO_t heater_command = {
-        .value_actual = 0,
-        .value_prev = 0
-        };
-
     // 1.- COMMON SERVICES
 
     // COMMON EVENT LOOP
@@ -191,7 +185,7 @@ typedef enum {
     //int result = gpio_task_create();
     //ESP_LOGI(TAG, "gpio_task_create error: %d ", result); 
     
-    gpio2_init(event_loop_h);
+    gpio3_init(event_loop_h);
 
 
 
